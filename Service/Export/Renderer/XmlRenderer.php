@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright © OpenGento, All rights reserved.
+ * Copyright © 2018 OpenGento, All rights reserved.
  * See LICENSE bundled with this library for license details.
  */
 declare(strict_types=1);
@@ -8,39 +8,37 @@ declare(strict_types=1);
 namespace Opengento\Gdpr\Service\Export\Renderer;
 
 use Magento\Framework\Convert\ConvertArray;
-use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Filesystem;
+use Opengento\Gdpr\Service\Export\AbstractRenderer;
+use Opengento\Gdpr\Service\Export\RendererInterface;
 
-final class XmlRenderer extends AbstractRenderer
+/**
+ * Class XmlRenderer
+ */
+final class XmlRenderer extends AbstractRenderer implements RendererInterface
 {
-    private const ROOT_NAME = 'data';
-
     /**
-     * @var ConvertArray
+     * @var \Magento\Framework\Convert\ConvertArray
      */
     private $convertArray;
 
     /**
-     * @var string
+     * @param \Magento\Framework\Filesystem $filesystem
+     * @param \Magento\Framework\Convert\ConvertArray $convertArray
      */
-    private $rootName;
-
     public function __construct(
         Filesystem $filesystem,
-        ConvertArray $convertArray,
-        string $rootName = self::ROOT_NAME
+        ConvertArray $convertArray
     ) {
         $this->convertArray = $convertArray;
-        $this->rootName = $rootName;
-        parent::__construct($filesystem, 'xml');
+        parent::__construct($filesystem);
     }
 
     /**
-     * @inheritdoc
-     * @throws LocalizedException
+     * {@inheritdoc}
      */
     public function render(array $data): string
     {
-        return $this->convertArray->assocToXml($data, $this->rootName)->saveXML();
+        return $this->convertArray->assocToXml($data)->__toString();
     }
 }

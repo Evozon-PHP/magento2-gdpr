@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright © OpenGento, All rights reserved.
+ * Copyright © 2018 OpenGento, All rights reserved.
  * See LICENSE bundled with this library for license details.
  */
 declare(strict_types=1);
@@ -10,79 +10,78 @@ namespace Opengento\Gdpr\Console\Command;
 use Magento\Framework\App\Area;
 use Magento\Framework\App\State;
 use Magento\Framework\Console\Cli;
-use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Registry;
-use Opengento\Gdpr\Api\ActionInterface;
-use Opengento\Gdpr\Model\Action\ArgumentReader;
-use Opengento\Gdpr\Model\Action\ContextBuilder;
+use Opengento\Gdpr\Service\ErasureStrategy;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+/**
+ * Class EraseCommand
+ */
 class EraseCommand extends Command
 {
-    private const INPUT_ARGUMENT_ENTITY_ID = 'entity_id';
-    private const INPUT_ARGUMENT_ENTITY_TYPE = 'entity_type';
+    /**#@+
+     * Input Variables Names
+     */
+    const INPUT_ARGUMENT_CUSTOMER = 'customer';
+    /**#@-*/
 
     /**
-     * @var State
+     * @var \Magento\Framework\App\State
      */
     private $appState;
 
     /**
-     * @var Registry
+     * @var \Magento\Framework\Registry
      */
     private $registry;
 
     /**
-     * @var ActionInterface
+     * @var \Opengento\Gdpr\Service\ErasureStrategy
      */
-    private $action;
+    private $erasureStrategy;
 
     /**
-     * @var ContextBuilder
+     * @param \Magento\Framework\App\State $appState
+     * @param \Magento\Framework\Registry $registry
+     * @param \Opengento\Gdpr\Service\ErasureStrategy $erasureStrategy
+     * @param null|string $name
      */
-    private $actionContextBuilder;
-
     public function __construct(
         State $appState,
         Registry $registry,
-        ActionInterface $action,
-        ContextBuilder $actionContextBuilder,
-        string $name = 'gdpr:entity:erase'
+        ErasureStrategy $erasureStrategy,
+        string $name = 'gdpr:customer:erase'
     ) {
         $this->appState = $appState;
         $this->registry = $registry;
-        $this->action = $action;
-        $this->actionContextBuilder = $actionContextBuilder;
+        $this->erasureStrategy = $erasureStrategy;
         parent::__construct($name);
     }
 
-    protected function configure(): void
+    /**
+     * {@inheritdoc}
+     */
+    protected function configure()
     {
         parent::configure();
 
-        $this->setDescription('Erase the entity\'s related data.');
+        $this->setDescription('Erase the customer\'s personal data.');
         $this->setDefinition([
             new InputArgument(
-                self::INPUT_ARGUMENT_ENTITY_TYPE,
-                InputArgument::REQUIRED,
-                'Entity Type'
-            ),
-            new InputArgument(
-                self::INPUT_ARGUMENT_ENTITY_ID,
+                self::INPUT_ARGUMENT_CUSTOMER,
                 InputArgument::REQUIRED + InputArgument::IS_ARRAY,
-                'Entity ID'
-            ),
+                'Customer ID'
+            )
         ]);
     }
 
     /**
-     * @inheritdoc
-     * @throws LocalizedException
+     * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output): int
+    protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->appState->setAreaCode(Area::AREA_GLOBAL);
         $oldValue = $this->registry->registry('isSecureArea');
@@ -90,22 +89,12 @@ class EraseCommand extends Command
 
         $returnCode = Cli::RETURN_SUCCESS;
 
-        $entityIds = $input->getArgument(self::INPUT_ARGUMENT_ENTITY_ID);
-        $entityType = $input->getArgument(self::INPUT_ARGUMENT_ENTITY_TYPE);
-
         try {
-            foreach ($entityIds as $entityId) {
-                $this->actionContextBuilder->setParameters([
-                    ArgumentReader::ENTITY_ID => $entityId,
-                    ArgumentReader::ENTITY_TYPE => $entityType
-                ]);
-                $this->action->execute($this->actionContextBuilder->create());
-
-                $output->writeln(
-                    '<info>Entity\'s (' . $entityType . ') with ID "' . $entityId . '" has been erased.</info>'
-                );
+            foreach ($input->getArgument(self::INPUT_ARGUMENT_CUSTOMER) as $customerId) {
+                $this->erasureStrategy->execute((int) $customerId);
+                $output->writeln('<info>Customer\'s ("' . $customerId . '") personal data has been erased.</info>');
             }
-        } catch (LocalizedException $e) {
+        } catch (\Exception $e) {
             $output->writeln('<error>' . $e->getMessage() . '</error>');
             $returnCode = Cli::RETURN_FAILURE;
         }

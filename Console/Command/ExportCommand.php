@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright © OpenGento, All rights reserved.
+ * Copyright © 2018 OpenGento, All rights reserved.
  * See LICENSE bundled with this library for license details.
  */
 declare(strict_types=1);
@@ -10,66 +10,73 @@ namespace Opengento\Gdpr\Console\Command;
 use Magento\Framework\App\Area;
 use Magento\Framework\App\State;
 use Magento\Framework\Console\Cli;
-use Magento\Framework\Exception\LocalizedException;
-use Opengento\Gdpr\Api\ActionInterface;
-use Opengento\Gdpr\Api\Data\ExportEntityInterface;
-use Opengento\Gdpr\Model\Action\ArgumentReader;
-use Opengento\Gdpr\Model\Action\ContextBuilder;
-use Opengento\Gdpr\Model\Action\Export\ArgumentReader as ExportArgumentReader;
+use Opengento\Gdpr\Service\ExportManagement;
+use Opengento\Gdpr\Service\ExportStrategy;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+/**
+ * Class ExportCommand
+ * @package Opengento\Gdpr\Console\Command
+ */
 class ExportCommand extends Command
 {
-    private const INPUT_ARGUMENT_ENTITY_ID = 'entity_id';
-    private const INPUT_ARGUMENT_ENTITY_TYPE = 'entity_type';
-    private const INPUT_OPTION_FILENAME = 'filename';
+    /**#@+
+     * Input Variables Names
+     */
+    const INPUT_ARGUMENT_CUSTOMER = 'customer';
+    const INPUT_OPTION_FILENAME = 'filename';
+    /**#@-*/
 
     /**
-     * @var State
+     * @var \Magento\Framework\App\State
      */
     private $appState;
 
     /**
-     * @var ActionInterface
+     * @var \Opengento\Gdpr\Service\ExportManagement
      */
-    private $action;
+    private $exportManagement;
 
     /**
-     * @var ContextBuilder
+     * @var \Opengento\Gdpr\Service\ExportStrategy
      */
-    private $actionContextBuilder;
+    private $exportStrategy;
 
+    /**
+     * @param \Magento\Framework\App\State $appState
+     * @param \Opengento\Gdpr\Service\ExportManagement $exportManagement
+     * @param \Opengento\Gdpr\Service\ExportStrategy $exportStrategy
+     * @param null|string $name
+     */
     public function __construct(
         State $appState,
-        ActionInterface $action,
-        ContextBuilder $actionContextBuilder,
-        string $name = 'gdpr:entity:export'
+        ExportManagement $exportManagement,
+        ExportStrategy $exportStrategy,
+        string $name = 'gdpr:customer:export'
     ) {
         $this->appState = $appState;
-        $this->action = $action;
-        $this->actionContextBuilder = $actionContextBuilder;
+        $this->exportManagement = $exportManagement;
+        $this->exportStrategy = $exportStrategy;
         parent::__construct($name);
     }
 
-    protected function configure(): void
+    /**
+     * {@inheritdoc}
+     */
+    protected function configure()
     {
         parent::configure();
 
-        $this->setDescription('Export the entity\'s related data.');
+        $this->setDescription('Export the customer\'s personal data.');
         $this->setDefinition([
             new InputArgument(
-                self::INPUT_ARGUMENT_ENTITY_TYPE,
-                InputArgument::REQUIRED,
-                'Entity Type'
-            ),
-            new InputArgument(
-                self::INPUT_ARGUMENT_ENTITY_ID,
+                self::INPUT_ARGUMENT_CUSTOMER,
                 InputArgument::REQUIRED + InputArgument::IS_ARRAY,
-                'Entity ID'
+                'Customer ID'
             ),
             new InputOption(
                 self::INPUT_OPTION_FILENAME,
@@ -82,32 +89,21 @@ class ExportCommand extends Command
     }
 
     /**
-     * @inheritdoc
-     * @throws LocalizedException
+     * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output): int
+    protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->appState->setAreaCode(Area::AREA_GLOBAL);
 
         $resultCode = Cli::RETURN_SUCCESS;
-        $entityIds = $input->getArgument(self::INPUT_ARGUMENT_ENTITY_ID);
-        $entityType = $input->getArgument(self::INPUT_ARGUMENT_ENTITY_TYPE);
+        $customerIds = $input->getArgument(self::INPUT_ARGUMENT_CUSTOMER);
         $fileName = $input->getOption(self::INPUT_OPTION_FILENAME);
 
         try {
-            foreach ($entityIds as $entityId) {
-                $this->actionContextBuilder->setParameters([
-                    ArgumentReader::ENTITY_ID => $entityId,
-                    ArgumentReader::ENTITY_TYPE => $entityType,
-                    ExportArgumentReader::EXPORT_FILE_NAME => $fileName . '_' . $entityId
-                ]);
-                $result = $this->action->execute($this->actionContextBuilder->create())->getResult();
-                /** @var ExportEntityInterface $exportEntity */
-                $exportEntity = $result[ExportArgumentReader::EXPORT_ENTITY];
-
-                $output->writeln(
-                    '<info>Entity\'s related data have been exported to: ' . $exportEntity->getFilePath() . '.</info>'
-                );
+            foreach ($customerIds as $customerId) {
+                $personalData = $this->exportManagement->execute((int) $customerId);
+                $fileName = $this->exportStrategy->saveData($fileName . '_' . $customerId, $personalData);
+                $output->writeln('<info>Customer\'s personal data have been exported to: ' . $fileName . '.</info>');
             }
         } catch (\Exception $e) {
             $output->writeln('<error>' . $e->getMessage() . '</error>');

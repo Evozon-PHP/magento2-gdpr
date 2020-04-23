@@ -1,26 +1,26 @@
 <?php
 /**
- * Copyright © OpenGento, All rights reserved.
+ * Copyright © 2018 OpenGento, All rights reserved.
  * See LICENSE bundled with this library for license details.
  */
 
 /** @var \Magento\Framework\View\Element\Template $block */
 
-/** @var \Opengento\Gdpr\ViewModel\Customer\Privacy\SettingsDataProvider $settingsDataProvider */
+/** @var \Opengento\Gdpr\ViewModel\Privacy\SettingsDataProvider $settingsDataProvider */
 $settingsDataProvider = $block->getData('settingsDataProvider');
+/** @var \Opengento\Gdpr\ViewModel\UrlsDataProvider $urlsDataProvider */
+$urlsDataProvider = $block->getData('urlsDataProvider');
 ?>
-<?php if ($settingsDataProvider->getPrivacyInformationHtml()): ?>
-    <div class="block block-dashboard-info">
-        <div class="block-title">
-            <strong><?= $block->escapeHtml(__('Information')) ?></strong>
-        </div>
-        <div class="block-content">
-            <div class="widget block block-static-block">
-                <?= $settingsDataProvider->getPrivacyInformationHtml() ?>
-            </div>
+<div class="block block-dashboard-info">
+    <div class="block-title">
+        <strong><?= $block->escapeHtml(__('Information')) ?></strong>
+    </div>
+    <div class="block-content">
+        <div class="widget block block-static-block">
+            <?= $settingsDataProvider->getPrivacyInformation() ?>
         </div>
     </div>
-<?php endif; ?>
+</div>
 <div class="block block-privacy-info">
     <?= $block->getChildHtml() ?>
 </div>

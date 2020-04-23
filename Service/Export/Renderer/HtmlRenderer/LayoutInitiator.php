@@ -7,46 +7,46 @@ declare(strict_types=1);
 
 namespace Opengento\Gdpr\Service\Export\Renderer\HtmlRenderer;
 
-use LogicException;
 use Magento\Framework\View\Layout\BuilderFactory;
 use Magento\Framework\View\Layout\GeneratorPool;
 use Magento\Framework\View\Layout\ReaderPool;
 use Magento\Framework\View\LayoutFactory;
 use Magento\Framework\View\LayoutInterface;
-use Magento\Framework\View\Model\Layout\Merge;
 use Magento\Framework\View\Page\Config;
 use Magento\Framework\View\Page\Layout\Reader;
-use function str_replace;
 
+/**
+ * Class LayoutInitiator
+ */
 final class LayoutInitiator implements LayoutInitiatorInterface
 {
     /**
-     * @var LayoutFactory
+     * @var \Magento\Framework\View\LayoutFactory
      */
     private $layoutFactory;
 
     /**
-     * @var BuilderFactory
+     * @var \Magento\Framework\View\Layout\BuilderFactory
      */
     private $layoutBuilderFactory;
 
     /**
-     * @var ReaderPool
+     * @var \Magento\Framework\View\Layout\ReaderPool
      */
     private $layoutReaderPool;
 
     /**
-     * @var GeneratorPool
+     * @var \Magento\Framework\View\Layout\GeneratorPool
      */
     private $layoutGeneratorPool;
 
     /**
-     * @var Reader
+     * @var \Magento\Framework\View\Page\Layout\Reader
      */
     private $pageLayoutReader;
 
     /**
-     * @var Config
+     * @var \Magento\Framework\View\Page\Config
      */
     private $pageConfig;
 
@@ -55,6 +55,15 @@ final class LayoutInitiator implements LayoutInitiatorInterface
      */
     private $defaultLayoutHandle;
 
+    /**
+     * @param \Magento\Framework\View\LayoutFactory $layoutFactory
+     * @param \Magento\Framework\View\Layout\BuilderFactory $layoutBuilderFactory
+     * @param \Magento\Framework\View\Layout\ReaderPool $layoutReaderPool
+     * @param \Magento\Framework\View\Layout\GeneratorPool $layoutGeneratorPool
+     * @param \Magento\Framework\View\Page\Layout\Reader $pageLayoutReader
+     * @param \Magento\Framework\View\Page\Config $pageConfig
+     * @param string $defaultLayoutHandle
+     */
     public function __construct(
         LayoutFactory $layoutFactory,
         BuilderFactory $layoutBuilderFactory,
@@ -73,6 +82,11 @@ final class LayoutInitiator implements LayoutInitiatorInterface
         $this->defaultLayoutHandle = $defaultLayoutHandle;
     }
 
+    /**
+     * Create and initialize the page layout instructions
+     *
+     * @return \Magento\Framework\View\LayoutInterface
+     */
     public function createLayout(): LayoutInterface
     {
         $layout = $this->layoutFactory->create([
@@ -83,7 +97,7 @@ final class LayoutInitiator implements LayoutInitiatorInterface
 
         $layout->getUpdate()->addHandle('default');
         $layout->getUpdate()->addHandle($this->defaultLayoutHandle);
-        /** @var Merge $update */
+        /** @var \Magento\Framework\View\Model\Layout\Merge $update */
         $update = $layout->getUpdate();
         if ($update->isLayoutDefined()) {
             $update->removeHandle('default');
@@ -92,6 +106,12 @@ final class LayoutInitiator implements LayoutInitiatorInterface
         return $this->addConfigLayout($layout);
     }
 
+    /**
+     * Add the default configuration to the page layout
+     *
+     * @param \Magento\Framework\View\LayoutInterface $layout
+     * @return \Magento\Framework\View\LayoutInterface
+     */
     private function addConfigLayout(LayoutInterface $layout): LayoutInterface
     {
         $this->layoutBuilderFactory->create(
@@ -103,15 +123,15 @@ final class LayoutInitiator implements LayoutInitiatorInterface
             ]
         )->build();
 
-        /** @var Merge $update */
+        /** @var \Magento\Framework\View\Model\Layout\Merge $update */
         $update = $layout->getUpdate();
         $pageLayout = $this->pageConfig->getPageLayout() ?: $update->getPageLayout();
 
         if (!$pageLayout) {
-            throw new LogicException('Page layout is missing.');
+            throw new \LogicException('Page layout is missing.');
         }
 
-        $this->pageConfig->addBodyClass(str_replace('_', '-', $this->defaultLayoutHandle));
+        $this->pageConfig->addBodyClass(\str_replace('_', '-', $this->defaultLayoutHandle));
         $this->pageConfig->addBodyClass('page-layout-' . $pageLayout);
 
         return $layout;

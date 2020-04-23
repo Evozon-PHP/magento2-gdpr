@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright © OpenGento, All rights reserved.
+ * Copyright © 2018 OpenGento, All rights reserved.
  * See LICENSE bundled with this library for license details.
  */
 declare(strict_types=1);
@@ -9,22 +9,34 @@ namespace Opengento\Gdpr\Service\Export\Renderer;
 
 use Magento\Framework\Filesystem;
 use Magento\Framework\Serialize\Serializer\Json;
+use Opengento\Gdpr\Service\Export\AbstractRenderer;
+use Opengento\Gdpr\Service\Export\RendererInterface;
 
-final class JsonRenderer extends AbstractRenderer
+/**
+ * Class JsonRenderer
+ */
+final class JsonRenderer extends AbstractRenderer implements RendererInterface
 {
     /**
-     * @var Json
+     * @var \Magento\Framework\Serialize\Serializer\Json
      */
     private $jsonSerializer;
 
+    /**
+     * @param \Magento\Framework\Filesystem $filesystem
+     * @param \Magento\Framework\Serialize\Serializer\Json $jsonSerializer
+     */
     public function __construct(
         Filesystem $filesystem,
         Json $jsonSerializer
     ) {
         $this->jsonSerializer = $jsonSerializer;
-        parent::__construct($filesystem, 'json');
+        parent::__construct($filesystem);
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function render(array $data): string
     {
         return $this->jsonSerializer->serialize($data);

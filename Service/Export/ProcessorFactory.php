@@ -4,14 +4,10 @@
  * See LICENSE bundled with this library for license details.
  */
 declare(strict_types=1);
-
 namespace Opengento\Gdpr\Service\Export;
-
-use InvalidArgumentException;
 use Magento\Framework\ObjectManagerInterface;
-use function sprintf;
-
 /**
+ * Class ProcessorFactory
  * @api
  */
 final class ProcessorFactory
@@ -20,15 +16,13 @@ final class ProcessorFactory
      * @var string[]
      */
     private $exporters;
-
     /**
-     * @var ObjectManagerInterface
+     * @var \Magento\Framework\ObjectManagerInterface
      */
     private $objectManager;
-
     /**
-     * @param string[] $exporters
-     * @param ObjectManagerInterface $objectManager
+     * @param string[] $exporters
+     * @param \Magento\Framework\ObjectManagerInterface $objectManager
      */
     public function __construct(
         array $exporters,
@@ -37,13 +31,17 @@ final class ProcessorFactory
         $this->exporters = $exporters;
         $this->objectManager = $objectManager;
     }
-
+    /**
+     * Create a new export processor
+     *
+     * @param string $entityType
+     * @return \Opengento\Gdpr\Service\Export\ProcessorInterface
+     */
     public function get(string $entityType): ProcessorInterface
     {
         if (!isset($this->exporters[$entityType])) {
-            throw new InvalidArgumentException(sprintf('Unknown exporter for entity type "%s".', $entityType));
+            throw new \InvalidArgumentException(\sprintf('Unknown exporter for entity type "%s".', $entityType));
         }
-
         return $this->objectManager->get($this->exporters[$entityType]);
     }
 }

@@ -1,122 +1,62 @@
 <?php
 /**
- * Copyright © OpenGento, All rights reserved.
+ * Copyright © 2018 OpenGento, All rights reserved.
  * See LICENSE bundled with this library for license details.
  */
 declare(strict_types=1);
 
 namespace Opengento\Gdpr\Service\Export\Renderer;
 
-use Exception;
-use InvalidArgumentException;
 use Magento\Framework\DataObject;
 use Magento\Framework\Filesystem;
-use Magento\Framework\Translate\InlineInterface;
-use Magento\Framework\View\Element\Template;
-use Magento\Framework\View\FileSystem as ViewFileSystem;
-use Magento\Framework\View\Page\Config;
-use Magento\Framework\View\Page\Config\Renderer;
-use Magento\Framework\View\Page\Config\RendererFactory;
-use Opengento\Gdpr\Service\Export\Renderer\HtmlRenderer\LayoutInitiatorInterface;
-use function extract;
-use function ob_end_clean;
-use function ob_get_clean;
-use function ob_start;
+use Magento\Framework\View\Layout\BuilderFactory;
+use Magento\Framework\View\LayoutFactory;
+use Opengento\Gdpr\Service\Export\AbstractRenderer;
+use Opengento\Gdpr\Service\Export\RendererInterface;
 
-final class HtmlRenderer extends AbstractRenderer
+/**
+ * Class HtmlRenderer
+ */
+final class HtmlRenderer extends AbstractRenderer implements RendererInterface
 {
     /**
-     * @var LayoutInitiatorInterface
+     * @var \Magento\Framework\View\LayoutFactory
      */
-    private $layoutInitiator;
+    private $layoutFactory;
 
     /**
-     * @var Renderer
+     * @var \Magento\Framework\View\Layout\BuilderFactory|\Magento\Framework\View\LayoutFactory
      */
-    private $pageConfigRenderer;
+    private $layoutBuilderFactory;
 
     /**
-     * @var InlineInterface
+     * @param \Magento\Framework\Filesystem $filesystem
+     * @param \Magento\Framework\View\LayoutFactory $layoutFactory
+     * @param \Magento\Framework\View\Layout\BuilderFactory $layoutBuilderFactory
      */
-    private $translateInline;
-
-    /**
-     * @var ViewFileSystem
-     */
-    private $viewFileSystem;
-
-    /**
-     * @var string
-     */
-    private $template;
-
     public function __construct(
         Filesystem $filesystem,
-        LayoutInitiatorInterface $layoutInitiator,
-        Config $pageConfig,
-        RendererFactory $pageConfigRendererFactory,
-        InlineInterface $translateInline,
-        ViewFileSystem $viewFileSystem,
-        string $template
+        LayoutFactory $layoutFactory,
+        BuilderFactory $layoutBuilderFactory
     ) {
-        $this->layoutInitiator = $layoutInitiator;
-        $this->pageConfigRenderer = $pageConfigRendererFactory->create(['pageConfig' => $pageConfig]);
-        $this->translateInline = $translateInline;
-        $this->viewFileSystem = $viewFileSystem;
-        $this->template = $template;
-        parent::__construct($filesystem, 'html');
+        $this->layoutFactory = $layoutFactory;
+        $this->layoutBuilderFactory = $layoutBuilderFactory;
+        parent::__construct($filesystem);
     }
 
     /**
-     * @inheritdoc
-     * @throws Exception
+     * {@inheritdoc}
      */
     public function render(array $data): string
     {
-        $layout = $this->layoutInitiator->createLayout();
+        $layout = $this->layoutFactory->create(['cacheable' => false]);
+        $this->layoutBuilderFactory->create(BuilderFactory::TYPE_PAGE, ['layout' => $layout]);
+        $layout->getUpdate()->addHandle('customer_privacy_export_personal_data');
 
-        $addBlock = $layout->getBlock('head.additional');
-        $requireJs = $layout->getBlock('require.js');
-        /** @var Template $block */
+        /** @var \Magento\Framework\View\Element\Template $block */
         $block = $layout->getBlock('main.content.customer.privacy.export.personal.data');
         $block->setData('viewModel', new DataObject($data));
 
-        $output = $this->renderPage([
-            'requireJs' => $requireJs ? $requireJs->toHtml() : null,
-            'headContent' => $this->pageConfigRenderer->renderHeadContent(),//todo replace style to inline css
-            'headAdditional' => $addBlock ? $addBlock->toHtml() : null,
-            'htmlAttributes' => $this->pageConfigRenderer->renderElementAttributes(Config::ELEMENT_TYPE_HTML),
-            'headAttributes' => $this->pageConfigRenderer->renderElementAttributes(Config::ELEMENT_TYPE_HEAD),
-            'bodyAttributes' => $this->pageConfigRenderer->renderElementAttributes(Config::ELEMENT_TYPE_BODY),
-            'loaderIcon' => 'images/loader-2.gif',//todo
-            'layoutContent' => $layout->getOutput(),
-        ]);
-        $this->translateInline->processResponseBody($output);
-
-        return $output;
-    }
-
-    /**
-     * @param array $viewVars
-     * @return string
-     * @throws Exception
-     */
-    private function renderPage(array $viewVars): string
-    {
-        $fileName = $this->viewFileSystem->getTemplateFileName($this->template);
-        if (!$fileName) {
-            throw new InvalidArgumentException('Template "' . $this->template . '" is not found');
-        }
-
-        ob_start();
-        try {
-            extract($viewVars, EXTR_SKIP);
-            include $fileName;
-        } catch (Exception $exception) {
-            ob_end_clean();
-            throw $exception;
-        }
-
-        return ob_get_clean();
+        return $layout->getOutput();
     }
 }

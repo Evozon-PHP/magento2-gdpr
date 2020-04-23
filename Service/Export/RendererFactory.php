@@ -4,14 +4,10 @@
  * See LICENSE bundled with this library for license details.
  */
 declare(strict_types=1);
-
 namespace Opengento\Gdpr\Service\Export;
-
-use InvalidArgumentException;
 use Magento\Framework\ObjectManagerInterface;
-use function sprintf;
-
 /**
+ * Class ExportFactory
  * @api
  */
 final class RendererFactory
@@ -20,15 +16,13 @@ final class RendererFactory
      * @var string[]
      */
     private $renderers;
-
     /**
-     * @var ObjectManagerInterface
+     * @var \Magento\Framework\ObjectManagerInterface
      */
     private $objectManager;
-
     /**
-     * @param string[] $renderers
-     * @param ObjectManagerInterface $objectManager
+     * @param string[] $renderers
+     * @param \Magento\Framework\ObjectManagerInterface $objectManager
      */
     public function __construct(
         array $renderers,
@@ -37,13 +31,18 @@ final class RendererFactory
         $this->renderers = $renderers;
         $this->objectManager = $objectManager;
     }
-
-    public function get(string $rendererCode): RendererInterface
+    /**
+     * Create a new export renderer
+     *
+     * @param string $rendererCode
+     * @param array $arguments
+     * @return \Opengento\Gdpr\Service\Export\RendererInterface
+     */
+    public function create(string $rendererCode, array $arguments = []): RendererInterface
     {
         if (!isset($this->renderers[$rendererCode])) {
-            throw new InvalidArgumentException(sprintf('Unknown renderer type "%s".', $rendererCode));
+            throw new \InvalidArgumentException(\sprintf('Unknown renderer type "%s".', $rendererCode));
         }
-
-        return $this->objectManager->get($this->renderers[$rendererCode]);
+        return $this->objectManager->create($this->renderers[$rendererCode], $arguments);
     }
 }
