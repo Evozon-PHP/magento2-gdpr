@@ -1,5 +1,5 @@
 {
-    "name": "opengento/module-gdpr",
+    "name": "evozon-php/magento2-gdpr",
     "description": "Gdpr Compliance Module for Magento 2",
     "keywords": [
         "php",
