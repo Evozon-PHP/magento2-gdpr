@@ -1,5 +1,5 @@
 {
-    "name": "evozon-php/module-gdpr",
+    "name": "opengento/module-gdpr",
     "description": "Gdpr Compliance Module for Magento 2",
     "keywords": [
         "php",
@@ -30,7 +30,6 @@
         "roave/security-advisories": "dev-master"
     },
     "type": "magento2-module",
-    "version": "1.0.0",
     "license": [
         "MIT"
     ],
