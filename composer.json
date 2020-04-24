@@ -1,5 +1,5 @@
 {
-    "name": "evozon-php/magento2-gdpr",
+    "name": "opengento/module-gdpr",
     "description": "Gdpr Compliance Module for Magento 2",
     "keywords": [
         "php",
@@ -23,7 +23,7 @@
         "magento/marketplace-eqp": "^1.0.0"
     },
     "type": "magento2-module",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "license": [
         "MIT"
     ],
